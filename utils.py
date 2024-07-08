@@ -24,7 +24,7 @@ import scipy
 import numpy as np
 import tensorflow as tf
 
-from scipy.misc import imresize
+import cv2
 
 
 def extract_pose_keypoints(pose):
@@ -84,10 +84,10 @@ def process_segment_map(segment, h, w):
   """Extract segment maps."""
   segment = np.asarray(segment.T, dtype=np.uint8)
   if h >= w:
-    segment = imresize(segment, (h, h), interp='nearest')
+    segment = cv2.resize(segment, (h, h), interpolation=cv2.INTER_NEAREST)
     segment = segment[:, :w]
   else:
-    segment = imresize(segment, (w, w), interp='nearest')
+    segment = cv2.resize(segment, (w, w), interpolation=cv2.INTER_NEAREST)
     segment = segment[:h, :] 
   return segment
 
