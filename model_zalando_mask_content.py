@@ -31,7 +31,8 @@ from utils import *
 
 import numpy as np
 import scipy.io as sio
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 FLAGS = tf.app.flags.FLAGS
 
