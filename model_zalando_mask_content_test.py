@@ -30,28 +30,31 @@ import scipy.io as sio
 import scipy.misc
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
+from absl import flags
+from absl import app
+from absl import logging
 
 from utils import *
 from model_zalando_mask_content import create_generator
 
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = flags.FLAGS
 
-tf.flags.DEFINE_string("pose_dir", "data/pose/",
+flags.DEFINE_string("pose_dir", "data/pose/",
                        "Directory containing poses.")
-tf.flags.DEFINE_string("segment_dir", "data/segment/",
+.DEFINE_string("segment_dir", "data/segment/",
                        "Directory containing human segmentations.")
-tf.flags.DEFINE_string("image_dir", "data/women_top/",
+flags.DEFINE_string("image_dir", "data/women_top/",
                        "Directory containing product and person images.")
-tf.flags.DEFINE_string("test_label",
+flags.DEFINE_string("test_label",
                        "data/viton_test_pairs.txt",
                        "File containing labels for testing.")
-tf.flags.DEFINE_string("result_dir", "results/",
+flags.DEFINE_string("result_dir", "results/",
                        "Folder containing the results of testing.")
 
-tf.flags.DEFINE_integer("begin", "0", "")
-tf.flags.DEFINE_integer("end", "2032", "")
-tf.logging.set_verbosity(tf.logging.INFO)
+flags.DEFINE_integer("begin", "0", "")
+flags.DEFINE_integer("end", "2032", "")
+logging.set_verbosity(logging.INFO)
 
 
 # preprocess images for testing
@@ -228,4 +231,4 @@ def main(unused_argv):
         index.write("</tr>")
 
 if __name__ == "__main__":
-  tf.app.run()
+  app.run(main)
