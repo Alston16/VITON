@@ -42,7 +42,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string("pose_dir", "data/pose/",
                        "Directory containing poses.")
-.DEFINE_string("segment_dir", "data/segment/",
+flags.DEFINE_string("segment_dir", "data/segment/",
                        "Directory containing human segmentations.")
 flags.DEFINE_string("image_dir", "data/women_top/",
                        "Directory containing product and person images.")
