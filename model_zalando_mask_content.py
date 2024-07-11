@@ -33,53 +33,56 @@ import numpy as np
 import scipy.io as sio
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
+from absl import flags
+from absl import app
+from absl import logging
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = flags.FLAGS
 
-tf.flags.DEFINE_string("input_file_pattern",
+flags.DEFINE_string("input_file_pattern",
                        "./prepare_data/tfrecord/zalando-train-?????-of-00032",
                        "File pattern of sharded TFRecord input files.")
-tf.flags.DEFINE_string("mode", "train", "Training or testing")
-tf.flags.DEFINE_string("checkpoint", "", "Checkpoint path to resume training.")
-tf.flags.DEFINE_string("output_dir", "model/stage1/",
+flags.DEFINE_string("mode", "train", "Training or testing")
+flags.DEFINE_string("checkpoint", "", "Checkpoint path to resume training.")
+flags.DEFINE_string("output_dir", "model/stage1/",
                        "Output directory of images.")
-tf.flags.DEFINE_string("vgg_model_path", "./model/imagenet-vgg-verydeep-19.mat",
+flags.DEFINE_string("vgg_model_path", "./model/imagenet-vgg-verydeep-19.mat",
                        "model of the trained vgg net.")
 
-tf.flags.DEFINE_integer("number_of_steps", 1000000,
+flags.DEFINE_integer("number_of_steps", 1000000,
                         "Number of training steps.")
-tf.flags.DEFINE_integer("log_every_n_steps", 10,
+flags.DEFINE_integer("log_every_n_steps", 10,
                         "Frequency at which loss and global step are logged.")
-tf.flags.DEFINE_integer("batch_size", 16, "Size of mini batch.")
-tf.flags.DEFINE_integer("num_preprocess_threads", 1, "")
-tf.flags.DEFINE_integer("values_per_input_shard", 443, "")
-tf.flags.DEFINE_integer("ngf", 64,
+flags.DEFINE_integer("batch_size", 16, "Size of mini batch.")
+flags.DEFINE_integer("num_preprocess_threads", 1, "")
+flags.DEFINE_integer("values_per_input_shard", 443, "")
+flags.DEFINE_integer("ngf", 64,
                         "number of generator filters in first conv layer")
-tf.flags.DEFINE_integer("ndf", 64,
+flags.DEFINE_integer("ndf", 64,
                         "number of discriminator filters in first conv layer")
 # Summary
-tf.flags.DEFINE_integer("summary_freq", 100,
+flags.DEFINE_integer("summary_freq", 100,
                         "update summaries every summary_freq steps")
-tf.flags.DEFINE_integer("progress_freq", 10,
+flags.DEFINE_integer("progress_freq", 10,
                         "display progress every progress_freq steps")
-tf.flags.DEFINE_integer("trace_freq", 0,
+flags.DEFINE_integer("trace_freq", 0,
                         "trace execution every trace_freq steps")
-tf.flags.DEFINE_integer("display_freq", 300,
+flags.DEFINE_integer("display_freq", 300,
                         "write current training images every display_freq steps")
-tf.flags.DEFINE_integer("save_freq", 3000,
+flags.DEFINE_integer("save_freq", 3000,
                         "save model every save_freq steps, 0 to disable")
 
 # Weights
-tf.flags.DEFINE_float("mask_offset", 1.0, "Weight mask is emphasized.")
-tf.flags.DEFINE_float("number_of_samples", 14221.0, "Samples in training set.")
-tf.flags.DEFINE_float("lr", 0.0002, "Initial learning rate.")
-tf.flags.DEFINE_float("beta1", 0.5, "momentum term of adam")
-tf.flags.DEFINE_float("mask_l1_weight", 1.0, "Weight on L1 term of product mask.")
-tf.flags.DEFINE_float("content_l1_weight", 1.0, "Weight on L1 term of content.")
-tf.flags.DEFINE_float("perceptual_weight", 3.0, "weight on GAN term.")
+flags.DEFINE_float("mask_offset", 1.0, "Weight mask is emphasized.")
+flags.DEFINE_float("number_of_samples", 14221.0, "Samples in training set.")
+flags.DEFINE_float("lr", 0.0002, "Initial learning rate.")
+flags.DEFINE_float("beta1", 0.5, "momentum term of adam")
+flags.DEFINE_float("mask_l1_weight", 1.0, "Weight on L1 term of product mask.")
+flags.DEFINE_float("content_l1_weight", 1.0, "Weight on L1 term of content.")
+flags.DEFINE_float("perceptual_weight", 3.0, "weight on GAN term.")
 
 
-tf.logging.set_verbosity(tf.logging.INFO)
+logging.set_verbosity(logging.INFO)
 
 
 Model = collections.namedtuple("Model",
@@ -348,10 +351,10 @@ def main(unused_argv):
   sv = tf.train.Supervisor(logdir=FLAGS.output_dir,
                            save_summaries_secs=0, saver=None)
   with sv.managed_session() as sess:
-    tf.logging.info("parameter_count = %d" % sess.run(parameter_count))
+    logging.info("parameter_count = %d" % sess.run(parameter_count))
     
     if FLAGS.checkpoint != "":
-      tf.logging.info("loading model from checkpoint")
+      logging.info("loading model from checkpoint")
       checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint)
       if checkpoint == None:
         checkpoint = FLAGS.checkpoint
@@ -360,7 +363,7 @@ def main(unused_argv):
     if FLAGS.mode == "test":
       # testing
       # at most, process the test data once
-      tf.logging.info("test!")
+      logging.info("test!")
       with open(os.path.join(FLAGS.output_dir, "options.json"), "a") as f:
         f.write(json.dumps(vars(FLAGS), sort_keys=True, indent=4))
 
@@ -421,12 +424,12 @@ def main(unused_argv):
         results = sess.run(fetches, options=options, run_metadata=run_metadata)
 
         if should(FLAGS.summary_freq):
-          tf.logging.info("recording summary")
+          logging.info("recording summary")
           sv.summary_writer.add_summary(
               results["summary"], results["global_step"])
 
         if should(FLAGS.display_freq):
-          tf.logging.info("saving display images")
+          logging.info("saving display images")
           filesets = save_images(results["display"],
                                  image_dict=["body_segment", "skin_segment",
                                              "prod_segment", "mask_outputs",
@@ -443,7 +446,7 @@ def main(unused_argv):
                        step=True)
 
         if should(FLAGS.trace_freq):
-          tf.logging.info("recording trace")
+          logging.info("recording trace")
           sv.summary_writer.add_run_metadata(
               run_metadata, "step_%d" % results["global_step"])
 
@@ -453,15 +456,15 @@ def main(unused_argv):
           train_epoch = math.ceil(
               results["global_step"] / FLAGS.number_of_samples)
           rate = (step + 1) * FLAGS.batch_size / (time.time() - start)
-          tf.logging.info("progress epoch %d step %d  image/sec %0.1f" %
+          logging.info("progress epoch %d step %d  image/sec %0.1f" %
                 (train_epoch, results["global_step"], rate))
-          tf.logging.info("gen_loss_GAN: %f" % results["gen_loss_GAN"])
-          tf.logging.info("gen_loss_mask_L1: %f" % results["gen_loss_mask_L1"])
-          tf.logging.info("gen_loss_content_L1: %f" % results["gen_loss_content_L1"])
-          tf.logging.info("perceptual_loss: %f" % results["perceptual_loss"])
+          logging.info("gen_loss_GAN: %f" % results["gen_loss_GAN"])
+          logging.info("gen_loss_mask_L1: %f" % results["gen_loss_mask_L1"])
+          logging.info("gen_loss_content_L1: %f" % results["gen_loss_content_L1"])
+          logging.info("perceptual_loss: %f" % results["perceptual_loss"])
 
         if should(FLAGS.save_freq):
-          tf.logging.info("saving model")
+          logging.info("saving model")
           saver.save(sess, os.path.join(FLAGS.output_dir, "model"),
                      global_step=sv.global_step)
 
@@ -470,4 +473,4 @@ def main(unused_argv):
 
 
 if __name__ == "__main__":
-  tf.app.run()
+  app.run(main)
